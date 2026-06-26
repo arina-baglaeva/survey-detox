@@ -10,10 +10,8 @@ import os
 if not firebase_admin._apps:
     try:
         if "FIREBASE_KEY" in st.secrets:
-            # Streamlit Cloud: st.secrets уже отдаёт словарь
             cred = credentials.Certificate(st.secrets["FIREBASE_KEY"])
         else:
-            # Локально: читаем файл
             cred = credentials.Certificate("serviceAccountKey.json")
         firebase_admin.initialize_app(cred)
     except Exception as e:

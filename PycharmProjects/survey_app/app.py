@@ -1,6 +1,9 @@
 import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore
+import pandas as pd
+import plotly.express as px
+from datetime import datetime, timezone
 import os
 
 
@@ -40,7 +43,8 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
-# Настройка страницы
+
+# --- Настройка страницы ---
 st.set_page_config(page_title="Цифровой детокс", layout="wide")
 st.title("📱 Опрос: Цифровой детокс среди студентов")
 st.markdown("""
@@ -48,7 +52,7 @@ st.markdown("""
 _Все ответы анонимны и используются только в учебных целях_
 """)
 
-# Форма опроса
+# --- Форма опроса ---
 with st.form("detox_survey"):
     st.subheader("📋 Анкета")
 
@@ -74,7 +78,6 @@ with st.form("detox_survey"):
     tried_detox = st.radio("🔄 Пробовали ли вы снижать экранное время?",
                            ["Да, успешно", "Да, но не получилось", "Нет, не пробовал(а)"])
 
-    # НОВЫЕ ВОПРОСЫ:
     device = st.radio("📱 Какое устройство вы используете чаще всего?",
                       ["Смартфон", "Планшет", "Ноутбук", "ПК", "Всё одинаково"])
 
@@ -89,7 +92,7 @@ with st.form("detox_survey"):
 
     submitted = st.form_submit_button("✅ Отправить ответы")
 
-# Сохранение в Firebase
+# --- Сохранение в Firebase ---
 if submitted:
     if not age or not gender:
         st.warning("⚠️ Пожалуйста, заполните обязательные поля!")
@@ -106,7 +109,7 @@ if submitted:
             "check_freq": check_freq,
             "before_sleep": before_sleep,
             "comment": comment,
-            "timestamp": datetime.utcnow()
+            "timestamp": datetime.now(timezone.utc)  # исправлено!
         }
 
         try:
@@ -116,7 +119,7 @@ if submitted:
         except Exception as e:
             st.error(f"❌ Ошибка сохранения: {e}")
 
-# Аналитика
+# --- Аналитика ---
 if st.checkbox("📊 Показать аналитику (Instructor View)"):
     st.subheader("📈 Результаты опроса")
 
@@ -188,7 +191,6 @@ if st.checkbox("📊 Показать аналитику (Instructor View)"):
                               color_continuous_scale="Viridis")
         st.plotly_chart(fig_symptoms, use_container_width=True)
 
-        # Графики для новых вопросов
         st.markdown("---")
         st.subheader("📱 Анализ цифровых привычек")
 

@@ -5,15 +5,14 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 import os
-import json  # ← ЭТА СТРОКА ОБЯЗАТЕЛЬНА!
+import json
 # Initialize Firebase (works both locally and in cloud)
 if not firebase_admin._apps:
     try:
-        # For Streamlit Cloud: use secrets
         if "FIREBASE_KEY" in st.secrets:
-            cred = credentials.Certificate(st.secrets["FIREBASE_KEY"])
+            secrets_dict = st.secrets["FIREBASE_KEY"]
+            cred = credentials.Certificate(secrets_dict)
         else:
-            # For local: use file
             key_path = "serviceAccountKey.json"
             if os.path.exists(key_path):
                 cred = credentials.Certificate(key_path)
@@ -22,7 +21,7 @@ if not firebase_admin._apps:
                 st.stop()
         firebase_admin.initialize_app(cred)
     except Exception as e:
-        st.error(f"Firebase initialization error: {e}")
+        st.error(f"Firebase initialization error: {str(e)}")
         st.stop()
 
 db = firestore.client()

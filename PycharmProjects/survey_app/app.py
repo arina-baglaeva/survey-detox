@@ -5,23 +5,22 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 import os
-import json
-# Инициализация Firebase (локально + облако)
+
+# Инициализация Firebase (работает и локально, и в облаке)
 if not firebase_admin._apps:
     try:
         if "FIREBASE_KEY" in st.secrets:
-            # Облако: передаём строку напрямую, без json.loads()
+            # Streamlit Cloud: st.secrets уже отдаёт словарь
             cred = credentials.Certificate(st.secrets["FIREBASE_KEY"])
         else:
             # Локально: читаем файл
             cred = credentials.Certificate("serviceAccountKey.json")
         firebase_admin.initialize_app(cred)
     except Exception as e:
-        st.error(f"🔑 Ошибка подключения к Firebase: {e}")
+        st.error(f"Ошибка Firebase: {e}")
         st.stop()
 
 db = firestore.client()
-
 # Настройка страницы
 st.set_page_config(page_title="Цифровой детокс", layout="wide")
 st.title("📱 Опрос: Цифровой детокс среди студентов")

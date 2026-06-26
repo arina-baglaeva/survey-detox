@@ -6,22 +6,18 @@ import plotly.express as px
 from datetime import datetime
 import os
 import json
-# Initialize Firebase (works both locally and in cloud)
+# Инициализация Firebase (локально + облако)
 if not firebase_admin._apps:
     try:
         if "FIREBASE_KEY" in st.secrets:
-            secrets_dict = st.secrets["FIREBASE_KEY"]
-            cred = credentials.Certificate(secrets_dict)
+            # Облако: передаём строку напрямую, без json.loads()
+            cred = credentials.Certificate(st.secrets["FIREBASE_KEY"])
         else:
-            key_path = "serviceAccountKey.json"
-            if os.path.exists(key_path):
-                cred = credentials.Certificate(key_path)
-            else:
-                st.error("Error: serviceAccountKey.json not found.")
-                st.stop()
+            # Локально: читаем файл
+            cred = credentials.Certificate("serviceAccountKey.json")
         firebase_admin.initialize_app(cred)
     except Exception as e:
-        st.error(f"Firebase initialization error: {str(e)}")
+        st.error(f"🔑 Ошибка подключения к Firebase: {e}")
         st.stop()
 
 db = firestore.client()

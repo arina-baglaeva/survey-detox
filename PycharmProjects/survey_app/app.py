@@ -1,28 +1,45 @@
+import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-from datetime import datetime
 import os
 
-# Инициализация Firebase (работает и локально, и в облаке)
+
+# --- Функция получения учётных данных Firebase ---
+def get_firebase_creds():
+    # 1. Пытаемся взять из st.secrets (облако)
+    if hasattr(st, 'secrets') and all(key in st.secrets for key in
+                                      ['FIREBASE_PROJECT_ID', 'FIREBASE_PRIVATE_KEY', 'FIREBASE_CLIENT_EMAIL']):
+        cred_dict = {
+            "type": "service_account",
+            "project_id": st.secrets["FIREBASE_PROJECT_ID"],
+            "private_key_id": st.secrets.get("FIREBASE_PRIVATE_KEY_ID", ""),
+            "private_key": st.secrets["FIREBASE_PRIVATE_KEY"],
+            "client_email": st.secrets["FIREBASE_CLIENT_EMAIL"],
+            "client_id": st.secrets.get("FIREBASE_CLIENT_ID", ""),
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "client_x509_cert_url": st.secrets.get("FIREBASE_CLIENT_CERT_URL", "")
+        }
+        return credentials.Certificate(cred_dict)
+
+    # 2. Если секретов нет – пробуем локальный файл (для разработки)
+    key_path = "serviceAccountKey.json"
+    if os.path.exists(key_path):
+        return credentials.Certificate(key_path)
+
+    # 3. Ничего не найдено – останавливаем приложение с ошибкой
+    st.error(
+        "Firebase credentials not found. Please set secrets in Streamlit Cloud or provide serviceAccountKey.json locally.")
+    st.stop()
+
+
+# --- Инициализация Firebase (один раз за сессию) ---
 if not firebase_admin._apps:
-    try:
-        # Проверяем, запущено ли в облаке (есть ли secrets)
-        if "firebase_config" in st.secrets:
-            # Streamlit Cloud: st.secrets уже отдаёт словарь (TOML)
-            cred = credentials.Certificate(st.secrets["firebase_config"])
-        else:
-            # Локально: читаем файл
-            cred = credentials.Certificate("serviceAccountKey.json")
-        firebase_admin.initialize_app(cred)
-    except Exception as e:
-        st.error(f"🔑 Ошибка Firebase: {e}")
-        st.stop()
+    cred = get_firebase_creds()
+    firebase_admin.initialize_app(cred)
 
 db = firestore.client()
-
 # Настройка страницы
 st.set_page_config(page_title="Цифровой детокс", layout="wide")
 st.title("📱 Опрос: Цифровой детокс среди студентов")

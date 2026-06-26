@@ -1,0 +1,23 @@
+# Firebase service account key (НИКОГДА не публикуй!)
+serviceAccountKey.json
+
+# Virtual environment
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment variables
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

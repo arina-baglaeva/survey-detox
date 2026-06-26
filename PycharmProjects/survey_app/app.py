@@ -9,16 +9,20 @@ import os
 # Инициализация Firebase (работает и локально, и в облаке)
 if not firebase_admin._apps:
     try:
-        if "FIREBASE_KEY" in st.secrets:
-            cred = credentials.Certificate(st.secrets["FIREBASE_KEY"])
+        # Проверяем, запущено ли в облаке (есть ли secrets)
+        if "firebase_config" in st.secrets:
+            # Streamlit Cloud: st.secrets уже отдаёт словарь (TOML)
+            cred = credentials.Certificate(st.secrets["firebase_config"])
         else:
+            # Локально: читаем файл
             cred = credentials.Certificate("serviceAccountKey.json")
         firebase_admin.initialize_app(cred)
     except Exception as e:
-        st.error(f"Ошибка Firebase: {e}")
+        st.error(f"🔑 Ошибка Firebase: {e}")
         st.stop()
 
 db = firestore.client()
+
 # Настройка страницы
 st.set_page_config(page_title="Цифровой детокс", layout="wide")
 st.title("📱 Опрос: Цифровой детокс среди студентов")
@@ -52,6 +56,8 @@ with st.form("detox_survey"):
 
     tried_detox = st.radio("🔄 Пробовали ли вы снижать экранное время?",
                            ["Да, успешно", "Да, но не получилось", "Нет, не пробовал(а)"])
+
+    # НОВЫЕ ВОПРОСЫ:
     device = st.radio("📱 Какое устройство вы используете чаще всего?",
                       ["Смартфон", "Планшет", "Ноутбук", "ПК", "Всё одинаково"])
 
@@ -93,7 +99,7 @@ if submitted:
         except Exception as e:
             st.error(f"❌ Ошибка сохранения: {e}")
 
-# Аналитика (преподавательский режим)
+# Аналитика
 if st.checkbox("📊 Показать аналитику (Instructor View)"):
     st.subheader("📈 Результаты опроса")
 
@@ -105,22 +111,18 @@ if st.checkbox("📊 Показать аналитику (Instructor View)"):
     else:
         df = pd.DataFrame(data)
 
-        # Преобразуем время
         if "timestamp" in df.columns:
             df["timestamp"] = pd.to_datetime(df["timestamp"])
 
-        # Показываем таблицу
         st.write(f"**Всего ответов:** {len(df)}")
         st.dataframe(df.head(10))
 
-        # Графики
         st.markdown("---")
         st.subheader("📊 Визуализация данных")
 
         col1, col2 = st.columns(2)
 
         with col1:
-            # Распределение часов в соцсетях
             fig_hours = px.histogram(df, x="social_hours",
                                      title="⏰ Часы в соцсетях",
                                      labels={"social_hours": "Часов в день"},
@@ -128,14 +130,12 @@ if st.checkbox("📊 Показать аналитику (Instructor View)"):
             st.plotly_chart(fig_hours, use_container_width=True)
 
         with col2:
-            # Уровень стресса
             fig_stress = px.box(df, y="stress_level",
                                 title="😰 Уровень стресса",
                                 labels={"stress_level": "Баллы (1-10)"},
                                 color_discrete_sequence=["#4ECDC4"])
             st.plotly_chart(fig_stress, use_container_width=True)
 
-        # Круговая диаграмма - попытки детокса
         st.markdown("---")
         col3, col4 = st.columns(2)
 
@@ -148,7 +148,6 @@ if st.checkbox("📊 Показать аналитику (Instructor View)"):
             st.plotly_chart(fig_detox, use_container_width=True)
 
         with col4:
-            # Пол
             gender_counts = df["gender"].value_counts()
             fig_gender = px.pie(values=gender_counts.values,
                                 names=gender_counts.index,
@@ -156,11 +155,9 @@ if st.checkbox("📊 Показать аналитику (Instructor View)"):
                                 color_discrete_sequence=["#FCBAD3", "#A8D8EA", "#FFD93D"])
             st.plotly_chart(fig_gender, use_container_width=True)
 
-        # Симптомы
         st.markdown("---")
         st.subheader("🩺 Распространённость симптомов")
 
-        # Подсчитываем симптомы
         all_symptoms = []
         for symptoms_list in df["symptoms"]:
             all_symptoms.extend(symptoms_list)
@@ -173,13 +170,14 @@ if st.checkbox("📊 Показать аналитику (Instructor View)"):
                               color="Количество",
                               color_continuous_scale="Viridis")
         st.plotly_chart(fig_symptoms, use_container_width=True)
+
+        # Графики для новых вопросов
         st.markdown("---")
         st.subheader("📱 Анализ цифровых привычек")
 
         col5, col6, col7 = st.columns(3)
 
         with col5:
-            # Устройство
             device_counts = df["device"].value_counts()
             fig_device = px.pie(values=device_counts.values,
                                 names=device_counts.index,
@@ -188,7 +186,6 @@ if st.checkbox("📊 Показать аналитику (Instructor View)"):
             st.plotly_chart(fig_device, use_container_width=True)
 
         with col6:
-            # Частота проверок
             freq_counts = df["check_freq"].value_counts()
             fig_freq = px.bar(x=freq_counts.index, y=freq_counts.values,
                               title="⏰ Частота проверки телефона",
@@ -198,14 +195,13 @@ if st.checkbox("📊 Показать аналитику (Instructor View)"):
             st.plotly_chart(fig_freq, use_container_width=True)
 
         with col7:
-            # Телефон перед сном
             sleep_counts = df["before_sleep"].value_counts()
             fig_sleep = px.pie(values=sleep_counts.values,
                                names=sleep_counts.index,
                                title=" Телефон перед сном",
                                color_discrete_sequence=px.colors.qualitative.Pastel)
             st.plotly_chart(fig_sleep, use_container_width=True)
-        # Выводы
+
         st.markdown("---")
         st.subheader("💡 Краткие выводы")
 

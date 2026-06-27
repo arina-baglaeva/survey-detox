@@ -136,7 +136,21 @@ if st.checkbox("📊 Показать аналитику (Instructor View)"):
 
         st.write(f"**Всего ответов:** {len(df)}")
         st.dataframe(df.head(10))
+        # --- 📥 Экспорт данных ---
+        st.markdown("---")
+        st.subheader("📥 Экспорт данных")
 
+        current_time = datetime.now().strftime("%Y%m%d_%H%M")
+
+        # Экспорт в CSV с правильной кодировкой для Excel
+        csv_buffer = df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
+        st.download_button(
+            label="📥 Скачать данные в CSV",
+            data=csv_buffer,
+            file_name=f"detox_export_{current_time}.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
         st.markdown("---")
         st.subheader("📊 Визуализация данных")
 
